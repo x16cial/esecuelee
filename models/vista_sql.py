@@ -5,22 +5,24 @@ class VistaSQL(models.Model):
     _description = "Vista SQL que consolida facturas, ventas y pagos"
     _auto = False
     _table_query = """
-        SELECT
-            am.id AS id,
-            am.name AS factura,
-            so.name AS orden_venta,
-            am.partner_id AS cliente_id,
-            am.amount_total AS total_factura,
-            am.state AS estado_factura,
-            COALESCE(SUM(ap.amount), 0) AS total_pagado
-        FROM account_move am
-        LEFT JOIN sale_order so ON am.invoice_origin = so.name
-        LEFT JOIN account_move_line aml ON aml.move_id = am.id
-        LEFT JOIN account_partial_reconcile apr ON apr.debit_move_id = aml.id
-        LEFT JOIN account_move_line aml_pago ON aml_pago.id = apr.credit_move_id
-        LEFT JOIN account_payment ap ON ap.id = aml_pago.payment_id
-        WHERE am.state = 'posted'
-        GROUP BY am.id, so.name, am.partner_id, am.amount_total, am.state
+        SELECT 
+    am.id AS id,  
+    am.name AS factura,  
+    so.name AS orden_venta,  
+    am.partner_id AS cliente_id,  
+    am.amount_total AS total_factura,  
+    am.state AS estado_factura,  
+    COALESCE(SUM(ap.amount), 0) AS total_pagado,  
+    STRING_AGG(ap.name, ', ') AS pagos_asociados  -- Muestra los pagos como PBNK1/Factura
+FROM account_move am
+LEFT JOIN sale_order so ON am.invoice_origin = so.name
+LEFT JOIN account_move_line aml ON aml.move_id = am.id  
+LEFT JOIN account_partial_reconcile apr ON apr.debit_move_id = aml.id  
+LEFT JOIN account_move_line aml_pago ON aml_pago.id = apr.credit_move_id  
+LEFT JOIN account_payment ap ON ap.id = aml_pago.payment_id  -- Aquí obtenemos `ap.name`
+WHERE am.state = 'posted'
+GROUP BY am.id, so.name, am.partner_id, am.amount_total, am.state;
+
     """
 
     factura = fields.Char(string="Factura")
